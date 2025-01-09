@@ -11,13 +11,11 @@ final class AddressBuilder
         'supplement' => '',
     ];
 
-    private function __construct()
-    {
-    }
+    private function __construct() {}
 
     public static function make(): self
     {
-        return new self();
+        return new self;
     }
 
     public function name(string $name): self

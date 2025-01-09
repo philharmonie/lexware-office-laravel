@@ -111,8 +111,8 @@ use PhilHarmonie\LexOffice\Builders\InvoiceBuilder;
 use PhilHarmonie\LexOffice\Builders\AddressBuilder;
 use PhilHarmonie\LexOffice\Builders\LineItemBuilder;
 
-// Create an invoice using builders
 $invoice = InvoiceBuilder::make()
+    ->timezone('Europe/Berlin')
     ->voucherDate(now())
     ->address(
         AddressBuilder::make()
@@ -126,6 +126,7 @@ $invoice = InvoiceBuilder::make()
     ->addLineItem(
         LineItemBuilder::custom()
             ->name('Product')
+            ->description('Detailed description of the product')
             ->quantity(1)
             ->unitName('piece')
             ->unitPrice('EUR', 99.99, 19.0)
@@ -133,20 +134,23 @@ $invoice = InvoiceBuilder::make()
     ->addLineItem(
         LineItemBuilder::text()
             ->name('Note')
-            ->description('Additional information')
+            ->description('Additional context for the invoice')
     )
     ->taxConditions('net')
     ->paymentConditions(
-        label: '10 days - 2%',
+        label: '10 days - 3%',
         duration: 30,
-        discountPercentage: 2.0,
+        discountPercentage: 3.0,
         discountRange: 10
     )
+    ->shippingConditions(
+        date: now()->addDays(5),
+        type: 'delivery'
+    )
     ->title('Invoice')
+    ->introduction('Introduction text for the invoice')
+    ->remark('Thank you for your business!')
     ->toArray();
-
-// Create the invoice
-$result = Invoice::create($invoice, false);
 ```
 
 ## Testing
