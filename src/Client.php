@@ -16,8 +16,7 @@ final class Client implements ClientInterface
     public function __construct(
         private readonly string $apiKey,
         private readonly Http $http
-    ) {
-    }
+    ) {}
 
     /**
      * @param  array<string, mixed>  $params

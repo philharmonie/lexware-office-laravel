@@ -117,6 +117,7 @@ $invoice = InvoiceBuilder::make()
     ->address(
         AddressBuilder::make()
             ->name('Company Name')
+            ->supplement('c/o John Doe')
             ->street('Street 123')
             ->city('City')
             ->zip('12345')

@@ -7,18 +7,29 @@ namespace PhilHarmonie\LexOffice\Builders;
 final class AddressBuilder
 {
     /** @var array<string, string> */
-    private array $data = [];
+    private array $data = [
+        'supplement' => '',
+    ];
 
-    private function __construct() {}
+    private function __construct()
+    {
+    }
 
     public static function make(): self
     {
-        return new self;
+        return new self();
     }
 
     public function name(string $name): self
     {
         $this->data['name'] = $name;
+
+        return $this;
+    }
+
+    public function supplement(string $supplement): self
+    {
+        $this->data['supplement'] = $supplement;
 
         return $this;
     }

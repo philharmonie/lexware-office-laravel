@@ -45,18 +45,16 @@ test('it sets address from builder', function () {
         ->zip('12345')
         ->countryCode('DE');
 
-    $data = $this->invoice
+    $data = InvoiceBuilder::make()
         ->address($address)
         ->toArray();
 
-    expect($data['address'])
-        ->toBe([
-            'name' => 'Test Company',
-            'street' => 'Test Street 123',
-            'city' => 'Test City',
-            'zip' => '12345',
-            'countryCode' => 'DE',
-        ]);
+    expect($data['address'])->toHaveKey('name', 'Test Company')
+        ->toHaveKey('supplement', '') // Default value
+        ->toHaveKey('street', 'Test Street 123')
+        ->toHaveKey('city', 'Test City')
+        ->toHaveKey('zip', '12345')
+        ->toHaveKey('countryCode', 'DE');
 });
 
 test('it sets address from array', function () {
