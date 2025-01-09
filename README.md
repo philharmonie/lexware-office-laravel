@@ -102,6 +102,52 @@ $response = $client->get('/contacts', ['email' => 'example@domain.com']);
 $response = $client->post('/invoices', ['data' => 'value']);
 ```
 
+### Using Builders
+
+The package provides fluent builders for creating invoices and related structures:
+
+```php
+use PhilHarmonie\LexOffice\Builders\InvoiceBuilder;
+use PhilHarmonie\LexOffice\Builders\AddressBuilder;
+use PhilHarmonie\LexOffice\Builders\LineItemBuilder;
+
+// Create an invoice using builders
+$invoice = InvoiceBuilder::make()
+    ->voucherDate(now())
+    ->address(
+        AddressBuilder::make()
+            ->name('Company Name')
+            ->street('Street 123')
+            ->city('City')
+            ->zip('12345')
+            ->countryCode('DE')
+    )
+    ->addLineItem(
+        LineItemBuilder::custom()
+            ->name('Product')
+            ->quantity(1)
+            ->unitName('piece')
+            ->unitPrice('EUR', 99.99, 19.0)
+    )
+    ->addLineItem(
+        LineItemBuilder::text()
+            ->name('Note')
+            ->description('Additional information')
+    )
+    ->taxConditions('net')
+    ->paymentConditions(
+        label: '10 days - 2%',
+        duration: 30,
+        discountPercentage: 2.0,
+        discountRange: 10
+    )
+    ->title('Invoice')
+    ->toArray();
+
+// Create the invoice
+$result = Invoice::create($invoice, false);
+```
+
 ## Testing
 
 ```bash

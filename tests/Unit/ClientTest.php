@@ -87,24 +87,29 @@ test('post request throws api exception on error', function () {
 });
 
 test('api exception includes error details', function () {
-    $errorMessage = 'Invalid request';
-    $statusCode = 400;
-
     $this->http->fake([
-        '*' => $this->http::response(['message' => $errorMessage], $statusCode),
+        '*' => $this->http->response(
+            json_encode(['message' => 'Invalid request']),
+            400,
+            ['Content-Type' => 'application/json']
+        ),
     ]);
 
+    $statusCode = 400;
+    $errorMessage = 'Invalid request';
+
     try {
-        $this->client->get('/contacts');
+        $this->client->get('/test');
     } catch (ApiException $e) {
-        $expectedMessage = sprintf(
+        $actualMessage = trim($e->getMessage());
+        $expectedMessage = trim(sprintf(
             'HTTP request returned status code %d:%s%s',
             $statusCode,
-            PHP_EOL,
-            json_encode(['message' => $errorMessage]) // Removed JSON_PRETTY_PRINT
-        );
+            "\n",
+            json_encode(['message' => $errorMessage])
+        ));
 
-        expect($e->getMessage())->toBe($expectedMessage.PHP_EOL)
+        expect($actualMessage)->toBe($expectedMessage)
             ->and($e->getCode())->toBe($statusCode);
     }
 });

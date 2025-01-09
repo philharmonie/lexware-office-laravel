@@ -16,7 +16,8 @@ final class Client implements ClientInterface
     public function __construct(
         private readonly string $apiKey,
         private readonly Http $http
-    ) {}
+    ) {
+    }
 
     /**
      * @param  array<string, mixed>  $params
@@ -30,6 +31,7 @@ final class Client implements ClientInterface
                 ->withHeaders([
                     'Authorization' => "Bearer {$this->apiKey}",
                     'Accept' => 'application/json',
+                    'Content-Type' => 'application/json',
                 ])
                 ->get($this->baseUrl.$endpoint, $params)
                 ->throw()
@@ -51,6 +53,7 @@ final class Client implements ClientInterface
                 ->withHeaders([
                     'Authorization' => "Bearer {$this->apiKey}",
                     'Accept' => 'application/json',
+                    'Content-Type' => 'application/json',
                 ])
                 ->post($this->baseUrl.$endpoint, $data)
                 ->throw()
