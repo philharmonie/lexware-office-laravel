@@ -46,7 +46,7 @@ final class LineItemBuilder
         return $this;
     }
 
-    public function quantity(int $quantity): self
+    public function quantity(float|int $quantity): self
     {
         if ($this->data['type'] !== 'custom') {
             throw new InvalidArgumentException('Quantity can only be set for custom items.');
