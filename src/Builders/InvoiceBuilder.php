@@ -82,6 +82,16 @@ final class InvoiceBuilder
     }
 
     /**
+     * Create an invoice for a specific contact
+     */
+    public function forContact(string $contactId): self
+    {
+        $this->data['address'] = ['contactId' => $contactId];
+
+        return $this;
+    }
+
+    /**
      * @param  AddressBuilder|array<string, string>  $address
      */
     public function address(AddressBuilder|array $address): self

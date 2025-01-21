@@ -274,3 +274,32 @@ test('timezone handling with immutable dates', function () {
     expect($data['voucherDate'])->toBe('2024-01-01T11:00:00.000+00:00')
         ->and($data['shippingConditions']['shippingDate'])->toBe('2024-01-01T11:00:00.000+00:00');
 });
+
+test('it sets contact id through forContact method', function () {
+    $data = InvoiceBuilder::make()
+        ->forContact('contact-123')
+        ->toArray();
+
+    expect($data['address'])->toBe(['contactId' => 'contact-123']);
+});
+
+test('it allows overriding contact address after forContact', function () {
+    $data = InvoiceBuilder::make()
+        ->forContact('contact-123')
+        ->address([
+            'name' => 'Test Company',
+            'street' => 'Test Street 123',
+            'city' => 'Test City',
+            'zip' => '12345',
+            'countryCode' => 'DE',
+        ])
+        ->toArray();
+
+    expect($data['address'])
+        ->not->toHaveKey('contactId')
+        ->toHaveKey('name', 'Test Company')
+        ->toHaveKey('street', 'Test Street 123')
+        ->toHaveKey('city', 'Test City')
+        ->toHaveKey('zip', '12345')
+        ->toHaveKey('countryCode', 'DE');
+});
