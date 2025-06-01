@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace PhilHarmonie\LexOffice;
 
 use Illuminate\Http\Client\Factory as Http;
+use Illuminate\Http\Client\RequestException;
+use Illuminate\Support\Facades\Log;
 use PhilHarmonie\LexOffice\Contracts\ClientInterface;
 use PhilHarmonie\LexOffice\Exceptions\ApiException;
-use Throwable;
 
 final class Client implements ClientInterface
 {
@@ -16,7 +17,8 @@ final class Client implements ClientInterface
     public function __construct(
         private readonly string $apiKey,
         private readonly Http $http
-    ) {}
+    ) {
+    }
 
     /**
      * @param  array<string, mixed>  $params
@@ -25,7 +27,6 @@ final class Client implements ClientInterface
     public function get(string $endpoint, array $params = []): array
     {
         try {
-            /** @var array<string, mixed> */
             return $this->http
                 ->withHeaders([
                     'Authorization' => "Bearer {$this->apiKey}",
@@ -35,8 +36,9 @@ final class Client implements ClientInterface
                 ->get($this->baseUrl.$endpoint, $params)
                 ->throw()
                 ->json();
-        } catch (Throwable $e) {
-            throw new ApiException($e->getMessage(), (int) $e->getCode(), $e);
+        } catch (RequestException $e) {
+            $this->logError($e, $endpoint, $params);
+            throw $e;
         }
     }
 
@@ -47,7 +49,6 @@ final class Client implements ClientInterface
     public function post(string $endpoint, array $data = []): array
     {
         try {
-            /** @var array<string, mixed> */
             return $this->http
                 ->withHeaders([
                     'Authorization' => "Bearer {$this->apiKey}",
@@ -57,8 +58,30 @@ final class Client implements ClientInterface
                 ->post($this->baseUrl.$endpoint, $data)
                 ->throw()
                 ->json();
-        } catch (Throwable $e) {
-            throw new ApiException($e->getMessage(), (int) $e->getCode(), $e);
+        } catch (RequestException $e) {
+            $this->logError($e, $endpoint, $data);
+            throw $e;
         }
+    }
+
+    /**
+     * @throws ApiException
+     */
+    private function logError(RequestException $e, string $endpoint, array $data): never
+    {
+        $response = $e->response;
+
+        $status = $response->status();
+        $message = $response->json('message') ?? $response->body() ?? $e->getMessage();
+
+        Log::log($status >= 500 ? 'error' : 'warning', 'LexOffice API Error', [
+            'status' => $status,
+            'message' => $message,
+            'endpoint' => $endpoint,
+            'payload' => $data,
+            'response' => $response->json(),
+        ]);
+
+        throw new ApiException("LexOffice Error $status: $message", $status, $e);
     }
 }
