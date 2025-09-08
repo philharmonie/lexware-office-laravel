@@ -113,3 +113,21 @@ test('api exception includes error details', function () {
             ->and($e->getCode())->toBe($statusCode);
     }
 });
+
+test('get request logs error and throws api exception when response has no json', function () {
+    $this->http->fake([
+        '*' => $this->http::response('Plain text error', 500),
+    ]);
+
+    expect(fn () => $this->client->get('/test'))
+        ->toThrow(ApiException::class, 'HTTP request returned status code 500:');
+});
+
+test('post request logs error and throws api exception when response has no json', function () {
+    $this->http->fake([
+        '*' => $this->http::response('Plain text error', 500),
+    ]);
+
+    expect(fn () => $this->client->post('/test', ['data' => 'test']))
+        ->toThrow(ApiException::class, 'HTTP request returned status code 500:');
+});

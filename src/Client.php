@@ -17,8 +17,7 @@ final class Client implements ClientInterface
     public function __construct(
         private readonly string $apiKey,
         private readonly Http $http
-    ) {
-    }
+    ) {}
 
     /**
      * @param  array<string, mixed>  $params
@@ -38,7 +37,6 @@ final class Client implements ClientInterface
                 ->json();
         } catch (RequestException $e) {
             $this->logError($e, $endpoint, $params);
-            throw $e;
         }
     }
 
@@ -60,7 +58,6 @@ final class Client implements ClientInterface
                 ->json();
         } catch (RequestException $e) {
             $this->logError($e, $endpoint, $data);
-            throw $e;
         }
     }
 
@@ -82,6 +79,14 @@ final class Client implements ClientInterface
             'response' => $response->json(),
         ]);
 
-        throw new ApiException("LexOffice Error $status: $message", $status, $e);
+        $errorDetails = $response->json() ?? ['message' => $message];
+        $formattedMessage = sprintf(
+            'HTTP request returned status code %d:%s%s',
+            $status,
+            "\n",
+            json_encode($errorDetails)
+        );
+        
+        throw new ApiException($formattedMessage, $status, $e);
     }
 }
