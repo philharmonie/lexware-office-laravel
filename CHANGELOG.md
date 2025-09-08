@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0] - 2025-09-08
+
+### 🚀 Features
+
+- Add dunnings
+
 ## [1.1.3] - 2025-09-08
 
 ### 🚜 Refactor
 
 - _(Client)_ Make base URL configurable and improve error handling
+
+### ⚙️ Miscellaneous Tasks
+
+- Update Changelog
 
 ## [1.1.2] - 2025-09-08
 

@@ -8,6 +8,7 @@ use Illuminate\Http\Client\Factory as Http;
 use Illuminate\Support\ServiceProvider as BaseServiceProvider;
 use PhilHarmonie\LexOffice\Contracts\ClientInterface;
 use PhilHarmonie\LexOffice\Services\ContactService;
+use PhilHarmonie\LexOffice\Services\DunningService;
 use PhilHarmonie\LexOffice\Services\InvoiceService;
 use RuntimeException;
 
@@ -37,6 +38,7 @@ final class ServiceProvider extends BaseServiceProvider
 
         $this->app->bind(ClientInterface::class, Client::class);
         $this->app->singleton(ContactService::class);
+        $this->app->singleton(DunningService::class);
         $this->app->singleton(InvoiceService::class);
     }
 
