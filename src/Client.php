@@ -6,17 +6,16 @@ namespace PhilHarmonie\LexOffice;
 
 use Illuminate\Http\Client\Factory as Http;
 use Illuminate\Http\Client\RequestException;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
 use PhilHarmonie\LexOffice\Contracts\ClientInterface;
 use PhilHarmonie\LexOffice\Exceptions\ApiException;
 
-final class Client implements ClientInterface
+final readonly class Client implements ClientInterface
 {
-    private string $baseUrl = 'https://api.lexoffice.io/v1';
-
     public function __construct(
-        private readonly string $apiKey,
-        private readonly Http $http
+        private string $apiKey,
+        private Http $http
     ) {}
 
     /**
@@ -26,15 +25,17 @@ final class Client implements ClientInterface
     public function get(string $endpoint, array $params = []): array
     {
         try {
-            return $this->http
+            $response = $this->http
                 ->withHeaders([
                     'Authorization' => "Bearer {$this->apiKey}",
                     'Accept' => 'application/json',
                     'Content-Type' => 'application/json',
                 ])
-                ->get($this->baseUrl.$endpoint, $params)
+                ->get($this->getBaseUrl().$endpoint, $params)
                 ->throw()
                 ->json();
+
+            return is_array($response) ? $response : [];
         } catch (RequestException $e) {
             $this->logError($e, $endpoint, $params);
         }
@@ -47,21 +48,32 @@ final class Client implements ClientInterface
     public function post(string $endpoint, array $data = []): array
     {
         try {
-            return $this->http
+            $response = $this->http
                 ->withHeaders([
                     'Authorization' => "Bearer {$this->apiKey}",
                     'Accept' => 'application/json',
                     'Content-Type' => 'application/json',
                 ])
-                ->post($this->baseUrl.$endpoint, $data)
+                ->post($this->getBaseUrl().$endpoint, $data)
                 ->throw()
                 ->json();
+
+            return is_array($response) ? $response : [];
         } catch (RequestException $e) {
             $this->logError($e, $endpoint, $data);
         }
     }
 
+    private function getBaseUrl(): string
+    {
+        $baseUrl = Config::get('lexoffice.base_url', 'https://api.lexoffice.io/v1');
+
+        return is_string($baseUrl) ? $baseUrl : 'https://api.lexoffice.io/v1';
+    }
+
     /**
+     * @param  array<string, mixed>  $data
+     *
      * @throws ApiException
      */
     private function logError(RequestException $e, string $endpoint, array $data): never
@@ -69,7 +81,11 @@ final class Client implements ClientInterface
         $response = $e->response;
 
         $status = $response->status();
-        $message = $response->json('message') ?? $response->body() ?? $e->getMessage();
+        $jsonMessage = $response->json('message');
+        $bodyMessage = $response->body();
+        $exceptionMessage = $e->getMessage();
+
+        $message = $jsonMessage ?? (empty($bodyMessage) ? $exceptionMessage : $bodyMessage);
 
         Log::log($status >= 500 ? 'error' : 'warning', 'LexOffice API Error', [
             'status' => $status,
@@ -86,7 +102,7 @@ final class Client implements ClientInterface
             "\n",
             json_encode($errorDetails)
         );
-        
+
         throw new ApiException($formattedMessage, $status, $e);
     }
 }

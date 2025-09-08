@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Illuminate\Http\Client\Factory;
 use Illuminate\Http\Client\Request;
+use Illuminate\Support\Facades\Config;
 use PhilHarmonie\LexOffice\Client;
 use PhilHarmonie\LexOffice\Exceptions\ApiException;
 
@@ -130,4 +131,20 @@ test('post request logs error and throws api exception when response has no json
 
     expect(fn () => $this->client->post('/test', ['data' => 'test']))
         ->toThrow(ApiException::class, 'HTTP request returned status code 500:');
+});
+
+test('client uses config base url', function () {
+    Config::set('lexoffice.base_url', 'https://custom-api.example.com/v1');
+
+    $responseData = ['key' => 'value'];
+
+    $this->http->fake([
+        '*' => $this->http::response($responseData),
+    ]);
+
+    $this->client->get('/contacts');
+
+    $this->http->assertSent(function (Request $request) {
+        return str_starts_with($request->url(), 'https://custom-api.example.com/v1/contacts');
+    });
 });
