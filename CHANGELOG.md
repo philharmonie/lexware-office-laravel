@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0] - 2025-09-15
+
+### 🚀 Features
+
+- Make compatible with Laravel 12
+
 ## [1.2.0] - 2025-09-08
 
 ### 🚀 Features
@@ -12,7 +18,7 @@ All notable changes to this project will be documented in this file.
 
 ### 🚜 Refactor
 
-- _(Client)_ Make base URL configurable and improve error handling
+- *(Client)* Make base URL configurable and improve error handling
 
 ### ⚙️ Miscellaneous Tasks
 
@@ -28,14 +34,14 @@ All notable changes to this project will be documented in this file.
 
 ### ⚙️ Miscellaneous Tasks
 
-- _(release)_ Add changelog for v1.1.0
+- *(release)* Add changelog for v1.1.0
 - Better exception logging in client
 
 ## [1.1.0] - 2025-01-21
 
 ### 🚀 Features
 
-- _(InvoiceBuilder)_ Add forContact method for direct contact ID assignment
+- *(InvoiceBuilder)* Add forContact method for direct contact ID assignment
 
 ## [1.0.1] - 2025-01-09
 
