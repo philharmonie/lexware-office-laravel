@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PhilHarmonie\LexOffice;
 
+use Illuminate\Cache\CacheManager;
 use Illuminate\Http\Client\Factory as Http;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Config;
@@ -15,7 +16,9 @@ final readonly class Client implements ClientInterface
 {
     public function __construct(
         private string $apiKey,
-        private Http $http
+        private Http $http,
+        private ?CacheManager $cache = null,
+        private int $cacheTtl = 300
     ) {}
 
     /**
@@ -24,6 +27,15 @@ final readonly class Client implements ClientInterface
      */
     public function get(string $endpoint, array $params = []): array
     {
+        $cacheKey = $this->getCacheKey('GET', $endpoint, $params);
+        
+        if ($this->cache && $this->shouldCache($endpoint)) {
+            $cached = $this->cache->get($cacheKey);
+            if ($cached !== null) {
+                return $cached;
+            }
+        }
+
         try {
             $response = $this->http
                 ->withHeaders([
@@ -35,7 +47,13 @@ final readonly class Client implements ClientInterface
                 ->throw()
                 ->json();
 
-            return is_array($response) ? $response : [];
+            $result = is_array($response) ? $response : [];
+            
+            if ($this->cache && $this->shouldCache($endpoint)) {
+                $this->cache->put($cacheKey, $result, $this->cacheTtl);
+            }
+            
+            return $result;
         } catch (RequestException $e) {
             $this->logError($e, $endpoint, $params);
         }
@@ -104,5 +122,32 @@ final readonly class Client implements ClientInterface
         );
 
         throw new ApiException($formattedMessage, $status, $errorDetails, $e);
+    }
+
+    private function getCacheKey(string $method, string $endpoint, array $params = []): string
+    {
+        return 'lexoffice:' . strtolower($method) . ':' . md5($endpoint . serialize($params));
+    }
+
+    private function shouldCache(string $endpoint): bool
+    {
+        // Cache GET requests for read-only endpoints
+        $cacheableEndpoints = [
+            '/contacts',
+            '/countries',
+            '/payment-conditions',
+            '/posting-categories',
+            '/print-layouts',
+            '/profile',
+            '/recurring-templates',
+        ];
+
+        foreach ($cacheableEndpoints as $cacheableEndpoint) {
+            if (str_starts_with($endpoint, $cacheableEndpoint)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

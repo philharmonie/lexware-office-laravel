@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PhilHarmonie\LexOffice;
 
+use Illuminate\Cache\CacheManager;
 use Illuminate\Http\Client\Factory as Http;
 use Illuminate\Support\ServiceProvider as BaseServiceProvider;
 use PhilHarmonie\LexOffice\Contracts\ClientInterface;
@@ -22,7 +23,7 @@ final class ServiceProvider extends BaseServiceProvider
         );
 
         $this->app->singleton(Client::class, function ($app): Client {
-            /** @var array{api_key: string|null} */
+            /** @var array{api_key: string|null, cache_ttl?: int} */
             $config = config('lexoffice');
             $apiKey = $config['api_key'];
 
@@ -32,7 +33,9 @@ final class ServiceProvider extends BaseServiceProvider
 
             return new Client(
                 apiKey: $apiKey,
-                http: $app->make(Http::class)
+                http: $app->make(Http::class),
+                cache: $app->make(CacheManager::class),
+                cacheTtl: $config['cache_ttl'] ?? 300
             );
         });
 
