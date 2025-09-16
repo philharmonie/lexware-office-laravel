@@ -15,7 +15,12 @@ use PhilHarmonie\LexOffice\Exceptions\ApiException;
 final readonly class Client implements ClientInterface
 {
     private const RATE_LIMIT_REQUESTS_PER_SECOND = 2;
+
     private const RATE_LIMIT_WINDOW_SECONDS = 1;
+
+    private const MAX_RETRY_ATTEMPTS = 3;
+
+    private const RETRY_DELAY_BASE_MS = 1000;
 
     public function __construct(
         private string $apiKey,
@@ -31,7 +36,7 @@ final readonly class Client implements ClientInterface
     public function get(string $endpoint, array $params = []): array
     {
         $cacheKey = $this->getCacheKey('GET', $endpoint, $params);
-        
+
         if ($this->cache && $this->shouldCache($endpoint)) {
             $cached = $this->cache->get($cacheKey);
             if ($cached !== null) {
@@ -39,9 +44,9 @@ final readonly class Client implements ClientInterface
             }
         }
 
-        $this->handleRateLimit();
+        return $this->withRetry(function () use ($endpoint, $params, $cacheKey) {
+            $this->handleRateLimit();
 
-        try {
             $response = $this->http
                 ->withHeaders([
                     'Authorization' => "Bearer {$this->apiKey}",
@@ -59,9 +64,7 @@ final readonly class Client implements ClientInterface
             }
             
             return $result;
-        } catch (RequestException $e) {
-            $this->logError($e, $endpoint, $params);
-        }
+        }, $endpoint, $params);
     }
 
     /**
@@ -70,9 +73,9 @@ final readonly class Client implements ClientInterface
      */
     public function post(string $endpoint, array $data = []): array
     {
-        $this->handleRateLimit();
+        return $this->withRetry(function () use ($endpoint, $data) {
+            $this->handleRateLimit();
 
-        try {
             $response = $this->http
                 ->withHeaders([
                     'Authorization' => "Bearer {$this->apiKey}",
@@ -84,9 +87,7 @@ final readonly class Client implements ClientInterface
                 ->json();
 
             return is_array($response) ? $response : [];
-        } catch (RequestException $e) {
-            $this->logError($e, $endpoint, $data);
-        }
+        }, $endpoint, $data);
     }
 
     private function getBaseUrl(): string
@@ -133,7 +134,7 @@ final readonly class Client implements ClientInterface
 
     private function getCacheKey(string $method, string $endpoint, array $params = []): string
     {
-        return 'lexoffice:' . strtolower($method) . ':' . md5($endpoint . serialize($params));
+        return 'lexoffice:'.strtolower($method).':'.md5($endpoint.serialize($params));
     }
 
     private function shouldCache(string $endpoint): bool
@@ -164,30 +165,62 @@ final readonly class Client implements ClientInterface
             return;
         }
 
-        $rateLimitKey = 'lexoffice:rate_limit:' . $this->apiKey;
+        $rateLimitKey = 'lexoffice:rate_limit:'.$this->apiKey;
         $currentTime = time();
         $windowStart = $currentTime - self::RATE_LIMIT_WINDOW_SECONDS;
 
         // Get request timestamps for this window
         $requestTimestamps = $this->cache->get($rateLimitKey, []);
-        
+
         // Filter out timestamps outside the current window
-        $requestTimestamps = array_filter($requestTimestamps, fn($timestamp) => $timestamp > $windowStart);
-        
+        $requestTimestamps = array_filter($requestTimestamps, fn ($timestamp) => $timestamp > $windowStart);
+
         // Check if we're at the rate limit
         if (count($requestTimestamps) >= self::RATE_LIMIT_REQUESTS_PER_SECOND) {
             $oldestRequest = min($requestTimestamps);
             $waitTime = $oldestRequest + self::RATE_LIMIT_WINDOW_SECONDS - $currentTime;
-            
+
             if ($waitTime > 0) {
                 usleep($waitTime * 1000000); // Convert to microseconds
             }
         }
-        
+
         // Add current request timestamp
         $requestTimestamps[] = $currentTime;
-        
+
         // Store updated timestamps
         $this->cache->put($rateLimitKey, $requestTimestamps, self::RATE_LIMIT_WINDOW_SECONDS);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    private function withRetry(callable $operation, string $endpoint, array $payload): array
+    {
+        $attempt = 0;
+        $lastException = null;
+
+        while ($attempt < self::MAX_RETRY_ATTEMPTS) {
+            try {
+                return $operation();
+            } catch (RequestException $e) {
+                $lastException = $e;
+                $attempt++;
+
+                // Only retry on 5xx errors or 429 (rate limit)
+                if ($e->response && in_array($e->response->status(), [429, 500, 502, 503, 504]) && $attempt < self::MAX_RETRY_ATTEMPTS) {
+                    $delay = self::RETRY_DELAY_BASE_MS * pow(2, $attempt - 1); // Exponential backoff
+                    usleep($delay * 1000); // Convert to microseconds
+                    continue;
+                }
+
+                // Don't retry on 4xx errors (except 429) or if max attempts reached
+                $this->logError($e, $endpoint, $payload);
+            }
+        }
+
+        // This should never be reached due to logError throwing, but for type safety
+        throw $lastException ?? new RequestException('Unknown error occurred');
     }
 }
