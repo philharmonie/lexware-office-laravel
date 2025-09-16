@@ -2,11 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.3.0] - 2025-09-15
+## [unreleased]
 
 ### 🚀 Features
 
 - Make compatible with Laravel 12
+- Enhance ApiException with status code and response data
+- Add caching support to client and service provider
+- Implement rate limiting with token bucket algorithm
+- Add retry mechanism with exponential backoff
+- Add comprehensive validation to InvoiceBuilder
+- Add DTOs for Contact, Invoice, Dunning and Country
+- Extend configuration with timeout, retry, cache and logging options
+- Improve tests with mock factory and additional test cases
+- Improve IDE support with facade annotations and phpstorm meta
+- Enhance Client and InvoiceBuilder with improved error handling and validation
+
+### 🚜 Refactor
+
+- Remove unused DTOs and enhance Client error handling with cache support
+
+### 📚 Documentation
+
+- Enhance documentation with new features and examples
+- Simplify README to focus on Laravel-typical facade usage
 
 ## [1.2.0] - 2025-09-08
 

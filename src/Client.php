@@ -176,6 +176,11 @@ final readonly class Client implements ClientInterface
         // Get request timestamps for this window
         $requestTimestamps = $this->cache->get($rateLimitKey, []);
 
+        // Ensure we have an array
+        if (! is_array($requestTimestamps)) {
+            $requestTimestamps = [];
+        }
+
         // Filter out timestamps outside the current window
         $requestTimestamps = array_filter($requestTimestamps, fn ($timestamp): bool => $timestamp > $windowStart);
 
@@ -213,20 +218,26 @@ final readonly class Client implements ClientInterface
                 $lastException = $e;
                 $attempt++;
 
-                // Only retry on 5xx errors or 429 (rate limit)
-                if ($e->response !== null && in_array($e->response->status(), [429, 500, 502, 503, 504], true) && $attempt < self::MAX_RETRY_ATTEMPTS) {
-                    $delay = self::RETRY_DELAY_BASE_MS * 2 ** ($attempt - 1); // Exponential backoff
-                    usleep($delay * 1000); // Convert to microseconds
+                $isRetryable = $e->response !== null
+                    && in_array($e->response->status(), [429, 500, 502, 503, 504], true);
 
-                    continue;
+                if ($isRetryable) {
+                    if ($attempt < self::MAX_RETRY_ATTEMPTS) {
+                        $delay = self::RETRY_DELAY_BASE_MS * 2 ** ($attempt - 1);
+                        usleep($delay * 1000);
+
+                        continue; // weiterer Versuch
+                    }
+
+                    // >>> Hier: Versuche erschöpft -> Schleife verlassen, damit unten lastException geworfen wird
+                    break;
                 }
 
-                // Don't retry on 4xx errors (except 429) or if max attempts reached
+                // Nicht-retryable: sofort Domain-Exception
                 $this->logError($e, $endpoint, $payload);
             }
         }
 
-        // This should never be reached due to logError throwing, but for type safety
         throw $lastException ?? new Exception('Unknown error occurred');
     }
 }
