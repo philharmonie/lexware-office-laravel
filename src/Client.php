@@ -58,11 +58,11 @@ final readonly class Client implements ClientInterface
                 ->json();
 
             $result = is_array($response) ? $response : [];
-            
+
             if ($this->cache && $this->shouldCache($endpoint)) {
                 $this->cache->put($cacheKey, $result, $this->cacheTtl);
             }
-            
+
             return $result;
         }, $endpoint, $params);
     }
@@ -212,6 +212,7 @@ final readonly class Client implements ClientInterface
                 if ($e->response && in_array($e->response->status(), [429, 500, 502, 503, 504]) && $attempt < self::MAX_RETRY_ATTEMPTS) {
                     $delay = self::RETRY_DELAY_BASE_MS * pow(2, $attempt - 1); // Exponential backoff
                     usleep($delay * 1000); // Convert to microseconds
+
                     continue;
                 }
 

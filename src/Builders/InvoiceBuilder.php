@@ -189,7 +189,82 @@ final class InvoiceBuilder
     /** @return array<string, mixed> */
     public function toArray(): array
     {
+        $this->validate();
         return $this->data;
+    }
+
+    public function validate(): void
+    {
+        if (empty($this->data['address'])) {
+            throw new InvalidArgumentException('Address is required for invoice creation.');
+        }
+
+        if (empty($this->data['lineItems'])) {
+            throw new InvalidArgumentException('At least one line item is required for invoice creation.');
+        }
+
+        // Validate address structure
+        if (isset($this->data['address']['contactId'])) {
+            // Contact ID is valid
+        } elseif (is_array($this->data['address'])) {
+            $requiredAddressFields = ['name', 'street', 'city', 'zip', 'countryCode'];
+            foreach ($requiredAddressFields as $field) {
+                if (empty($this->data['address'][$field])) {
+                    throw new InvalidArgumentException("Address field '{$field}' is required.");
+                }
+            }
+        }
+
+        // Validate line items
+        foreach ($this->data['lineItems'] as $index => $item) {
+            if (empty($item['name'])) {
+                throw new InvalidArgumentException("Line item at index {$index} must have a name.");
+            }
+
+            if ($item['type'] === 'custom') {
+                $requiredCustomFields = ['quantity', 'unitName', 'unitPrice'];
+                foreach ($requiredCustomFields as $field) {
+                    if (! isset($item[$field])) {
+                        throw new InvalidArgumentException("Custom line item at index {$index} must have '{$field}'.");
+                    }
+                }
+
+                if (isset($item['unitPrice']) && ! is_array($item['unitPrice'])) {
+                    throw new InvalidArgumentException("Line item at index {$index} unitPrice must be an array.");
+                }
+            }
+        }
+
+        // Validate tax conditions
+        if (isset($this->data['taxConditions']['taxType'])) {
+            $validTaxTypes = ['net', 'gross', 'vatfree'];
+            if (! in_array($this->data['taxConditions']['taxType'], $validTaxTypes, true)) {
+                throw new InvalidArgumentException('Invalid tax type. Must be one of: ' . implode(', ', $validTaxTypes));
+            }
+        }
+
+        // Validate payment conditions
+        if (isset($this->data['paymentConditions'])) {
+            if (empty($this->data['paymentConditions']['paymentTermLabel'])) {
+                throw new InvalidArgumentException('Payment term label is required.');
+            }
+            if (! isset($this->data['paymentConditions']['paymentTermDuration']) || $this->data['paymentConditions']['paymentTermDuration'] < 0) {
+                throw new InvalidArgumentException('Payment term duration must be a positive integer.');
+            }
+        }
+
+        // Validate shipping conditions
+        if (isset($this->data['shippingConditions'])) {
+            if (empty($this->data['shippingConditions']['shippingDate'])) {
+                throw new InvalidArgumentException('Shipping date is required.');
+            }
+            if (isset($this->data['shippingConditions']['shippingType'])) {
+                $validShippingTypes = ['delivery', 'service'];
+                if (! in_array($this->data['shippingConditions']['shippingType'], $validShippingTypes, true)) {
+                    throw new InvalidArgumentException('Invalid shipping type. Must be one of: ' . implode(', ', $validShippingTypes));
+                }
+            }
+        }
     }
 
     private function formatDateTime(DateTimeInterface $date): string
