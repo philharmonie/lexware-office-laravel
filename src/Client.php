@@ -103,6 +103,6 @@ final readonly class Client implements ClientInterface
             json_encode($errorDetails)
         );
 
-        throw new ApiException($formattedMessage, $status, $e);
+        throw new ApiException($formattedMessage, $status, $errorDetails, $e);
     }
 }
