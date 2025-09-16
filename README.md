@@ -40,7 +40,23 @@ Add your Lexware Office API key to your `.env` file:
 
 ```env
 LEXOFFICE_API_KEY=your-api-key
+LEXOFFICE_BASE_URL=https://api.lexware.io/v1
+LEXOFFICE_TIMEOUT=30
+LEXOFFICE_RETRY_ATTEMPTS=3
+LEXOFFICE_CACHE_TTL=300
+LEXOFFICE_RATE_LIMITING_ENABLED=true
+LEXOFFICE_LOGGING_ENABLED=false
 ```
+
+### Configuration Options
+
+- `LEXOFFICE_API_KEY` - Your Lexware Office API key (required)
+- `LEXOFFICE_BASE_URL` - API base URL (default: https://api.lexware.io/v1)
+- `LEXOFFICE_TIMEOUT` - Request timeout in seconds (default: 30)
+- `LEXOFFICE_RETRY_ATTEMPTS` - Number of retry attempts for failed requests (default: 3)
+- `LEXOFFICE_CACHE_TTL` - Cache time-to-live in seconds (default: 300)
+- `LEXOFFICE_RATE_LIMITING_ENABLED` - Enable automatic rate limiting (default: true)
+- `LEXOFFICE_LOGGING_ENABLED` - Enable detailed API logging (default: false)
 
 ## Usage
 
@@ -104,7 +120,7 @@ $response = $client->post('/invoices', ['data' => 'value']);
 
 ### Using Builders
 
-The package provides fluent builders for creating invoices and related structures:
+The package provides fluent builders for creating invoices and related structures with comprehensive validation:
 
 ```php
 use PhilHarmonie\LexOffice\Builders\InvoiceBuilder;
@@ -150,8 +166,54 @@ $invoice = InvoiceBuilder::make()
     ->title('Invoice')
     ->introduction('Introduction text for the invoice')
     ->remark('Thank you for your business!')
-    ->toArray();
+    ->toArray(); // Automatically validates the invoice data
 ```
+
+### Using DTOs
+
+The package provides Data Transfer Objects for type-safe API responses:
+
+```php
+use PhilHarmonie\LexOffice\DTOs\ContactDto;
+use PhilHarmonie\LexOffice\DTOs\InvoiceDto;
+
+// Convert API response to DTO
+$contactData = Contact::find('contact-id');
+$contact = ContactDto::fromArray($contactData);
+
+// Access typed properties
+echo $contact->name; // string
+echo $contact->email; // string|null
+echo $contact->createdDate; // string
+
+// Convert back to array
+$array = $contact->toArray();
+```
+
+### Error Handling
+
+The package provides enhanced error handling with detailed exception information:
+
+```php
+use PhilHarmonie\LexOffice\Exceptions\ApiException;
+
+try {
+    $invoice = Invoice::create($data);
+} catch (ApiException $e) {
+    echo "Status Code: " . $e->getStatusCode();
+    echo "Response: " . json_encode($e->getResponse());
+    echo "Message: " . $e->getMessage();
+}
+```
+
+### Performance Features
+
+The package includes several performance optimizations:
+
+- **Automatic Caching**: GET requests to read-only endpoints are automatically cached
+- **Rate Limiting**: Automatic throttling to stay within API limits (2 requests/second)
+- **Retry Logic**: Automatic retry with exponential backoff for 5xx errors and rate limits
+- **Connection Pooling**: Efficient HTTP connection management
 
 ## Testing
 
