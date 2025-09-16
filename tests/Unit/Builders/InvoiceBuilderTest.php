@@ -303,3 +303,164 @@ test('it allows overriding contact address after forContact', function () {
         ->toHaveKey('zip', '12345')
         ->toHaveKey('countryCode', 'DE');
 });
+
+test('invoice builder validation requires address', function () {
+    $builder = InvoiceBuilder::make()
+        ->addLineItem(LineItemBuilder::custom()
+            ->name('Test Product')
+            ->quantity(1)
+            ->unitName('piece')
+            ->unitPrice('EUR', 99.99, 19.0));
+
+    expect(fn () => $builder->toValidatedArray())
+        ->toThrow(InvalidArgumentException::class, 'Address is required for invoice creation.');
+});
+
+test('invoice builder validation requires line items', function () {
+    $builder = InvoiceBuilder::make()
+        ->address(AddressBuilder::make()->name('Test Company'));
+
+    expect(fn () => $builder->toValidatedArray())
+        ->toThrow(InvalidArgumentException::class, 'At least one line item is required for invoice creation.');
+});
+
+test('invoice builder validation requires valid tax type', function () {
+    $builder = InvoiceBuilder::make()
+        ->address(AddressBuilder::make()->name('Test Company'))
+        ->addLineItem(LineItemBuilder::custom()
+            ->name('Test Product')
+            ->quantity(1)
+            ->unitName('piece')
+            ->unitPrice('EUR', 99.99, 19.0));
+
+    expect(fn () => $builder->taxConditions('invalid'))
+        ->toThrow(InvalidArgumentException::class, 'Invalid tax type.');
+});
+
+test('invoice builder validation requires valid shipping type', function () {
+    $builder = InvoiceBuilder::make()
+        ->address(AddressBuilder::make()->name('Test Company'))
+        ->addLineItem(LineItemBuilder::custom()
+            ->name('Test Product')
+            ->quantity(1)
+            ->unitName('piece')
+            ->unitPrice('EUR', 99.99, 19.0));
+
+    expect(fn () => $builder->shippingConditions(new DateTime, 'invalid'))
+        ->toThrow(InvalidArgumentException::class, 'Invalid shipping type.');
+});
+
+test('invoice builder handles timezone with string', function () {
+    $builder = InvoiceBuilder::make()
+        ->address(AddressBuilder::make()->name('Test Company'))
+        ->addLineItem(LineItemBuilder::custom()
+            ->name('Test Product')
+            ->quantity(1)
+            ->unitName('piece')
+            ->unitPrice('EUR', 99.99, 19.0))
+        ->timezone('Europe/Berlin');
+
+    // Just test that the method doesn't throw an exception
+    expect($builder)->toBeInstanceOf(InvoiceBuilder::class);
+});
+
+test('invoice builder handles timezone with DateTimeZone object', function () {
+    $timezone = new DateTimeZone('America/New_York');
+    $builder = InvoiceBuilder::make()
+        ->address(AddressBuilder::make()->name('Test Company'))
+        ->addLineItem(LineItemBuilder::custom()
+            ->name('Test Product')
+            ->quantity(1)
+            ->unitName('piece')
+            ->unitPrice('EUR', 99.99, 19.0))
+        ->timezone($timezone);
+
+    // Just test that the method doesn't throw an exception
+    expect($builder)->toBeInstanceOf(InvoiceBuilder::class);
+});
+
+test('invoice builder handles null timezone', function () {
+    $builder = InvoiceBuilder::make()
+        ->address(AddressBuilder::make()->name('Test Company'))
+        ->addLineItem(LineItemBuilder::custom()
+            ->name('Test Product')
+            ->quantity(1)
+            ->unitName('piece')
+            ->unitPrice('EUR', 99.99, 19.0))
+        ->timezone(null);
+
+    // Just test that the method doesn't throw an exception
+    expect($builder)->toBeInstanceOf(InvoiceBuilder::class);
+});
+
+test('invoice builder handles voucher date with DateTimeInterface', function () {
+    $date = new DateTime('2024-01-15');
+    $data = InvoiceBuilder::make()
+        ->address(AddressBuilder::make()->name('Test Company'))
+        ->addLineItem(LineItemBuilder::custom()
+            ->name('Test Product')
+            ->quantity(1)
+            ->unitName('piece')
+            ->unitPrice('EUR', 99.99, 19.0))
+        ->voucherDate($date)
+        ->toArray();
+
+    expect($data)->toHaveKey('voucherDate');
+    expect($data['voucherDate'])->toContain('2024-01-15');
+});
+
+test('invoice builder handles forContact method', function () {
+    $data = InvoiceBuilder::make()
+        ->addLineItem(LineItemBuilder::custom()
+            ->name('Test Product')
+            ->quantity(1)
+            ->unitName('piece')
+            ->unitPrice('EUR', 99.99, 19.0))
+        ->forContact('contact-123')
+        ->toArray();
+
+    expect($data['address'])->toHaveKey('contactId', 'contact-123');
+});
+
+test('invoice builder handles payment conditions with discount', function () {
+    $data = InvoiceBuilder::make()
+        ->address(AddressBuilder::make()->name('Test Company'))
+        ->addLineItem(LineItemBuilder::custom()
+            ->name('Test Product')
+            ->quantity(1)
+            ->unitName('piece')
+            ->unitPrice('EUR', 99.99, 19.0))
+        ->paymentConditions(
+            'Payment within 30 days',
+            30,
+            2.0,
+            10
+        )
+        ->toArray();
+
+    expect($data['paymentConditions'])
+        ->toHaveKey('paymentTermLabel', 'Payment within 30 days')
+        ->toHaveKey('paymentTermDuration', 30)
+        ->toHaveKey('paymentDiscountConditions', [
+            'discountPercentage' => 2.0,
+            'discountRange' => 10,
+        ]);
+});
+
+test('invoice builder handles shipping conditions with service type', function () {
+    $date = new DateTime('2024-01-15');
+    $data = InvoiceBuilder::make()
+        ->address(AddressBuilder::make()->name('Test Company'))
+        ->addLineItem(LineItemBuilder::custom()
+            ->name('Test Product')
+            ->quantity(1)
+            ->unitName('piece')
+            ->unitPrice('EUR', 99.99, 19.0))
+        ->shippingConditions($date, 'service')
+        ->toArray();
+
+    expect($data['shippingConditions'])
+        ->toHaveKey('shippingDate')
+        ->toHaveKey('shippingType', 'service');
+    expect($data['shippingConditions']['shippingDate'])->toContain('2024-01-15');
+});

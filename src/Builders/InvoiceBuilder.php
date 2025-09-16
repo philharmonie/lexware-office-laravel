@@ -189,6 +189,12 @@ final class InvoiceBuilder
     /** @return array<string, mixed> */
     public function toArray(): array
     {
+        return $this->data;
+    }
+
+    /** @return array<string, mixed> */
+    public function toValidatedArray(): array
+    {
         $this->validate();
 
         return $this->data;
@@ -218,6 +224,10 @@ final class InvoiceBuilder
 
         // Validate line items
         foreach ($this->data['lineItems'] as $index => $item) {
+            if (! is_array($item)) {
+                throw new InvalidArgumentException("Line item at index {$index} must be an array.");
+            }
+
             if (empty($item['name'])) {
                 throw new InvalidArgumentException("Line item at index {$index} must have a name.");
             }
@@ -249,7 +259,7 @@ final class InvoiceBuilder
             if (empty($this->data['paymentConditions']['paymentTermLabel'])) {
                 throw new InvalidArgumentException('Payment term label is required.');
             }
-            if (! isset($this->data['paymentConditions']['paymentTermDuration']) || $this->data['paymentConditions']['paymentTermDuration'] < 0) {
+            if ($this->data['paymentConditions']['paymentTermDuration'] < 0) {
                 throw new InvalidArgumentException('Payment term duration must be a positive integer.');
             }
         }
@@ -259,11 +269,9 @@ final class InvoiceBuilder
             if (empty($this->data['shippingConditions']['shippingDate'])) {
                 throw new InvalidArgumentException('Shipping date is required.');
             }
-            if (isset($this->data['shippingConditions']['shippingType'])) {
-                $validShippingTypes = ['delivery', 'service'];
-                if (! in_array($this->data['shippingConditions']['shippingType'], $validShippingTypes, true)) {
-                    throw new InvalidArgumentException('Invalid shipping type. Must be one of: '.implode(', ', $validShippingTypes));
-                }
+            $validShippingTypes = ['delivery', 'service'];
+            if (! in_array($this->data['shippingConditions']['shippingType'], $validShippingTypes, true)) {
+                throw new InvalidArgumentException('Invalid shipping type. Must be one of: '.implode(', ', $validShippingTypes));
             }
         }
     }

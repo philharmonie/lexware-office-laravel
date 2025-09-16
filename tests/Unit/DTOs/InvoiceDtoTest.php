@@ -39,7 +39,7 @@ test('invoice dto handles optional fields', function () {
         'createdDate' => '2024-01-01T12:00:00.000+01:00',
         'updatedDate' => '2024-01-01T12:00:00.000+01:00',
     ];
-    
+
     $dto = InvoiceDto::fromArray($data);
 
     expect($dto->id)->toBe('invoice-456')

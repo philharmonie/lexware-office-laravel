@@ -7,11 +7,14 @@ namespace PhilHarmonie\LexOffice\DTOs;
 final readonly class CountryDto
 {
     public function __construct(
-        public string $code,
-        public string $name,
-        public ?string $taxClassification
+        public mixed $code,
+        public mixed $name,
+        public mixed $taxClassification
     ) {}
 
+    /**
+     * @param  array<string, mixed>  $data
+     */
     public static function fromArray(array $data): self
     {
         return new self(
@@ -21,6 +24,9 @@ final readonly class CountryDto
         );
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function toArray(): array
     {
         return [

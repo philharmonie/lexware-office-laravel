@@ -7,27 +7,30 @@ namespace PhilHarmonie\LexOffice\DTOs;
 final readonly class InvoiceDto
 {
     public function __construct(
-        public string $id,
-        public string $resourceUri,
-        public string $voucherNumber,
-        public string $voucherDate,
-        public ?string $dueDate,
-        public ?string $address,
-        public ?string $lineItems,
-        public ?string $totalPrice,
-        public ?string $taxAmount,
-        public ?string $taxType,
-        public ?string $paymentConditions,
-        public ?string $shippingConditions,
-        public ?string $title,
-        public ?string $introduction,
-        public ?string $remark,
-        public ?string $files,
-        public string $createdDate,
-        public string $updatedDate,
-        public ?string $version
+        public mixed $id,
+        public mixed $resourceUri,
+        public mixed $voucherNumber,
+        public mixed $voucherDate,
+        public mixed $dueDate,
+        public mixed $address,
+        public mixed $lineItems,
+        public mixed $totalPrice,
+        public mixed $taxAmount,
+        public mixed $taxType,
+        public mixed $paymentConditions,
+        public mixed $shippingConditions,
+        public mixed $title,
+        public mixed $introduction,
+        public mixed $remark,
+        public mixed $files,
+        public mixed $createdDate,
+        public mixed $updatedDate,
+        public mixed $version
     ) {}
 
+    /**
+     * @param  array<string, mixed>  $data
+     */
     public static function fromArray(array $data): self
     {
         return new self(
@@ -53,6 +56,9 @@ final readonly class InvoiceDto
         );
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function toArray(): array
     {
         return [

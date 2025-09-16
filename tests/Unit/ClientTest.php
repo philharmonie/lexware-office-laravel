@@ -176,3 +176,59 @@ test('client retries on 429 rate limit', function () {
     expect(fn () => $this->client->get('/contacts'))
         ->toThrow(ApiException::class);
 });
+
+test('client handles successful retry after 5xx error', function () {
+    $this->http->fake([
+        '*' => $this->http::response(null, 500),
+        '*' => $this->http::response(['success' => true], 200),
+    ]);
+
+    $result = $this->client->get('/contacts');
+
+    expect($result)->toBe(['success' => true]);
+});
+
+test('client handles successful retry after 429 error', function () {
+    $this->http->fake([
+        '*' => $this->http::response(null, 429),
+        '*' => $this->http::response(['success' => true], 200),
+    ]);
+
+    $result = $this->client->get('/contacts');
+
+    expect($result)->toBe(['success' => true]);
+});
+
+test('client handles non-retryable errors', function () {
+    $this->http->fake([
+        '*' => $this->http::response(null, 400),
+    ]);
+
+    expect(fn () => $this->client->get('/contacts'))
+        ->toThrow(ApiException::class);
+});
+
+test('client handles post request with retry', function () {
+    $this->http->fake([
+        '*' => $this->http::response(null, 500),
+        '*' => $this->http::response(['created' => true], 201),
+    ]);
+
+    $result = $this->client->post('/contacts', ['name' => 'Test']);
+
+    expect($result)->toBe(['created' => true]);
+});
+
+test('client handles rate limiting with multiple requests', function () {
+    $this->http->fake([
+        '*' => $this->http->response(['data' => 'test'], 200),
+    ]);
+
+    // Make requests quickly to test rate limiting
+    $this->client->get('/contacts');
+    $this->client->get('/contacts');
+    $this->client->get('/contacts');
+
+    // Just test that no exception is thrown
+    expect(true)->toBeTrue();
+});

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PhilHarmonie\LexOffice;
 
+use Exception;
 use Illuminate\Cache\CacheManager;
 use Illuminate\Http\Client\Factory as Http;
 use Illuminate\Http\Client\RequestException;
@@ -39,12 +40,12 @@ final readonly class Client implements ClientInterface
 
         if ($this->cache && $this->shouldCache($endpoint)) {
             $cached = $this->cache->get($cacheKey);
-            if ($cached !== null) {
+            if ($cached !== null && is_array($cached)) {
                 return $cached;
             }
         }
 
-        return $this->withRetry(function () use ($endpoint, $params, $cacheKey) {
+        return $this->withRetry(function () use ($endpoint, $params, $cacheKey): array {
             $this->handleRateLimit();
 
             $response = $this->http
@@ -73,7 +74,7 @@ final readonly class Client implements ClientInterface
      */
     public function post(string $endpoint, array $data = []): array
     {
-        return $this->withRetry(function () use ($endpoint, $data) {
+        return $this->withRetry(function () use ($endpoint, $data): array {
             $this->handleRateLimit();
 
             $response = $this->http
@@ -129,9 +130,12 @@ final readonly class Client implements ClientInterface
             json_encode($errorDetails)
         );
 
-        throw new ApiException($formattedMessage, $status, $errorDetails, $e);
+        throw new ApiException($formattedMessage, $status, is_array($errorDetails) ? $errorDetails : ['message' => $message], $e);
     }
 
+    /**
+     * @param  array<string, mixed>  $params
+     */
     private function getCacheKey(string $method, string $endpoint, array $params = []): string
     {
         return 'lexoffice:'.strtolower($method).':'.md5($endpoint.serialize($params));
@@ -161,7 +165,7 @@ final readonly class Client implements ClientInterface
 
     private function handleRateLimit(): void
     {
-        if (! $this->cache) {
+        if (! $this->cache instanceof CacheManager) {
             return;
         }
 
@@ -173,15 +177,16 @@ final readonly class Client implements ClientInterface
         $requestTimestamps = $this->cache->get($rateLimitKey, []);
 
         // Filter out timestamps outside the current window
-        $requestTimestamps = array_filter($requestTimestamps, fn ($timestamp) => $timestamp > $windowStart);
+        $requestTimestamps = array_filter($requestTimestamps, fn ($timestamp): bool => $timestamp > $windowStart);
 
         // Check if we're at the rate limit
-        if (count($requestTimestamps) >= self::RATE_LIMIT_REQUESTS_PER_SECOND) {
+        $requestCount = count($requestTimestamps);
+        if ($requestCount >= self::RATE_LIMIT_REQUESTS_PER_SECOND) {
             $oldestRequest = min($requestTimestamps);
             $waitTime = $oldestRequest + self::RATE_LIMIT_WINDOW_SECONDS - $currentTime;
 
             if ($waitTime > 0) {
-                usleep($waitTime * 1000000); // Convert to microseconds
+                usleep((int) ($waitTime * 1000000)); // Convert to microseconds
             }
         }
 
@@ -209,8 +214,8 @@ final readonly class Client implements ClientInterface
                 $attempt++;
 
                 // Only retry on 5xx errors or 429 (rate limit)
-                if ($e->response && in_array($e->response->status(), [429, 500, 502, 503, 504]) && $attempt < self::MAX_RETRY_ATTEMPTS) {
-                    $delay = self::RETRY_DELAY_BASE_MS * pow(2, $attempt - 1); // Exponential backoff
+                if ($e->response !== null && in_array($e->response->status(), [429, 500, 502, 503, 504], true) && $attempt < self::MAX_RETRY_ATTEMPTS) {
+                    $delay = self::RETRY_DELAY_BASE_MS * 2 ** ($attempt - 1); // Exponential backoff
                     usleep($delay * 1000); // Convert to microseconds
 
                     continue;
@@ -222,6 +227,6 @@ final readonly class Client implements ClientInterface
         }
 
         // This should never be reached due to logError throwing, but for type safety
-        throw $lastException ?? new RequestException('Unknown error occurred');
+        throw $lastException ?? new Exception('Unknown error occurred');
     }
 }

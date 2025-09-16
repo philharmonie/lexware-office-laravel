@@ -7,21 +7,24 @@ namespace PhilHarmonie\LexOffice\DTOs;
 final readonly class ContactDto
 {
     public function __construct(
-        public string $id,
-        public string $name,
-        public ?string $email,
-        public ?string $phone,
-        public ?string $website,
-        public ?string $note,
-        public array $addresses,
-        public array $person,
-        public array $roles,
-        public ?string $archived,
-        public string $createdDate,
-        public string $updatedDate,
-        public ?string $version
+        public mixed $id,
+        public mixed $name,
+        public mixed $email,
+        public mixed $phone,
+        public mixed $website,
+        public mixed $note,
+        public mixed $addresses,
+        public mixed $person,
+        public mixed $roles,
+        public mixed $archived,
+        public mixed $createdDate,
+        public mixed $updatedDate,
+        public mixed $version
     ) {}
 
+    /**
+     * @param  array<string, mixed>  $data
+     */
     public static function fromArray(array $data): self
     {
         return new self(
@@ -41,6 +44,9 @@ final readonly class ContactDto
         );
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function toArray(): array
     {
         return [

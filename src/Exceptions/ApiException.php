@@ -8,6 +8,9 @@ use Exception;
 
 final class ApiException extends Exception
 {
+    /**
+     * @param  array<string, mixed>  $response
+     */
     public function __construct(
         string $message,
         public readonly int $statusCode,
@@ -17,6 +20,9 @@ final class ApiException extends Exception
         parent::__construct($message, $statusCode, $previous);
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function getResponse(): array
     {
         return $this->response;

@@ -106,9 +106,9 @@ final class LexOfficeResponseFactory
     {
         return array_merge([
             'id' => 'dunning-123',
-            'resourceUri' => 'https://api.lexware.io/v1/dunnings/dunning-123',
-            'voucherNumber' => 'DUN-001',
-            'voucherDate' => '2024-01-01T12:00:00.000+01:00',
+            'resourceUri' => '/dunnings/dunning-123',
+            'voucherNumber' => 'MAHN-001',
+            'voucherDate' => '2024-01-01',
             'address' => [
                 'contactId' => 'contact-123',
             ],
@@ -137,9 +137,20 @@ final class LexOfficeResponseFactory
                 'taxAmount' => 0.95,
             ],
             'taxType' => 'net',
-            'title' => 'Dunning Notice',
-            'introduction' => 'Payment reminder',
-            'remark' => 'Please pay immediately',
+            'paymentConditions' => [
+                'paymentTermLabel' => 'Payment within 14 days',
+                'paymentTermDuration' => 14,
+            ],
+            'shippingConditions' => [
+                'shippingDate' => '2024-01-01',
+                'shippingType' => 'delivery',
+            ],
+            'title' => 'Payment Reminder',
+            'introduction' => 'Please pay your outstanding invoice',
+            'remark' => 'Payment overdue',
+            'files' => [
+                'documentFileId' => 'file-123',
+            ],
             'createdDate' => '2024-01-01T12:00:00.000+01:00',
             'updatedDate' => '2024-01-01T12:00:00.000+01:00',
             'version' => 1,
