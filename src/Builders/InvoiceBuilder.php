@@ -190,6 +190,7 @@ final class InvoiceBuilder
     public function toArray(): array
     {
         $this->validate();
+
         return $this->data;
     }
 
@@ -239,7 +240,7 @@ final class InvoiceBuilder
         if (isset($this->data['taxConditions']['taxType'])) {
             $validTaxTypes = ['net', 'gross', 'vatfree'];
             if (! in_array($this->data['taxConditions']['taxType'], $validTaxTypes, true)) {
-                throw new InvalidArgumentException('Invalid tax type. Must be one of: ' . implode(', ', $validTaxTypes));
+                throw new InvalidArgumentException('Invalid tax type. Must be one of: '.implode(', ', $validTaxTypes));
             }
         }
 
@@ -261,7 +262,7 @@ final class InvoiceBuilder
             if (isset($this->data['shippingConditions']['shippingType'])) {
                 $validShippingTypes = ['delivery', 'service'];
                 if (! in_array($this->data['shippingConditions']['shippingType'], $validShippingTypes, true)) {
-                    throw new InvalidArgumentException('Invalid shipping type. Must be one of: ' . implode(', ', $validShippingTypes));
+                    throw new InvalidArgumentException('Invalid shipping type. Must be one of: '.implode(', ', $validShippingTypes));
                 }
             }
         }
