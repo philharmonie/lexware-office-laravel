@@ -14,6 +14,9 @@ use PhilHarmonie\LexOffice\Exceptions\ApiException;
 
 final readonly class Client implements ClientInterface
 {
+    private const RATE_LIMIT_REQUESTS_PER_SECOND = 2;
+    private const RATE_LIMIT_WINDOW_SECONDS = 1;
+
     public function __construct(
         private string $apiKey,
         private Http $http,
@@ -35,6 +38,8 @@ final readonly class Client implements ClientInterface
                 return $cached;
             }
         }
+
+        $this->handleRateLimit();
 
         try {
             $response = $this->http
@@ -65,6 +70,8 @@ final readonly class Client implements ClientInterface
      */
     public function post(string $endpoint, array $data = []): array
     {
+        $this->handleRateLimit();
+
         try {
             $response = $this->http
                 ->withHeaders([
@@ -149,5 +156,38 @@ final readonly class Client implements ClientInterface
         }
 
         return false;
+    }
+
+    private function handleRateLimit(): void
+    {
+        if (! $this->cache) {
+            return;
+        }
+
+        $rateLimitKey = 'lexoffice:rate_limit:' . $this->apiKey;
+        $currentTime = time();
+        $windowStart = $currentTime - self::RATE_LIMIT_WINDOW_SECONDS;
+
+        // Get request timestamps for this window
+        $requestTimestamps = $this->cache->get($rateLimitKey, []);
+        
+        // Filter out timestamps outside the current window
+        $requestTimestamps = array_filter($requestTimestamps, fn($timestamp) => $timestamp > $windowStart);
+        
+        // Check if we're at the rate limit
+        if (count($requestTimestamps) >= self::RATE_LIMIT_REQUESTS_PER_SECOND) {
+            $oldestRequest = min($requestTimestamps);
+            $waitTime = $oldestRequest + self::RATE_LIMIT_WINDOW_SECONDS - $currentTime;
+            
+            if ($waitTime > 0) {
+                usleep($waitTime * 1000000); // Convert to microseconds
+            }
+        }
+        
+        // Add current request timestamp
+        $requestTimestamps[] = $currentTime;
+        
+        // Store updated timestamps
+        $this->cache->put($rateLimitKey, $requestTimestamps, self::RATE_LIMIT_WINDOW_SECONDS);
     }
 }
