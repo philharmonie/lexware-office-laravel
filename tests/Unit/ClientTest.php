@@ -148,3 +148,31 @@ test('client uses config base url', function () {
         return str_starts_with($request->url(), 'https://custom-api.example.com/v1/contacts');
     });
 });
+
+test('client handles rate limiting', function () {
+    $this->http->fake([
+        '*' => $this->http::response(['key' => 'value']),
+    ]);
+
+    // Should not throw exception with rate limiting
+    $result = $this->client->get('/contacts');
+    expect($result)->toBe(['key' => 'value']);
+});
+
+test('client retries on 5xx errors', function () {
+    $this->http->fake([
+        '*' => $this->http::response(null, 500),
+    ]);
+
+    expect(fn () => $this->client->get('/contacts'))
+        ->toThrow(ApiException::class);
+});
+
+test('client retries on 429 rate limit', function () {
+    $this->http->fake([
+        '*' => $this->http::response(null, 429),
+    ]);
+
+    expect(fn () => $this->client->get('/contacts'))
+        ->toThrow(ApiException::class);
+});
