@@ -63,59 +63,49 @@ LEXOFFICE_LOGGING_ENABLED=false
 ### Contacts
 
 ```php
+use PhilHarmonie\LexOffice\Facades\Contact;
+
 // Find a contact by ID
-$contact = app(ContactService::class)->find('contact-id');
+$contact = Contact::find('contact-id');
 
 // List contacts with optional filters
-$contacts = app(ContactService::class)->list([
-    'email' => 'example@domain.com'
-]);
+$contacts = Contact::list(['email' => 'example@domain.com']);
 ```
 
 ### Invoices
 
 ```php
-// Create an invoice
-$invoice = app(InvoiceService::class)->create([
-    // Invoice data
-], $finalize = false);
-
-// Find an invoice by ID
-$invoice = app(InvoiceServiceInterface::class)->find('invoice-id');
-```
-
-### Using the Facades
-
-```php
-use PhilHarmonie\LexOffice\Facades\Contact;use PhilHarmonie\LexOffice\Facades\Invoice;
-
-// Find a contact
-$contact = Contact::find('contact-id');
-
-// List contacts
-$contacts = Contact::list(['email' => 'example@domain.com']);
+use PhilHarmonie\LexOffice\Facades\Invoice;
 
 // Create an invoice
 $invoice = Invoice::create($data, $finalize = false);
 
-// Find an invoice
+// Find an invoice by ID
 $invoice = Invoice::find('invoice-id');
 ```
 
-### Direct Client Usage
-
-If you need more control, you can use the client directly:
+### Dunning
 
 ```php
-use PhilHarmonie\LexOffice\Contracts\ClientInterface;
+use PhilHarmonie\LexOffice\Facades\Dunning;
 
-$client = app(ClientInterface::class);
+// Create a dunning
+$dunning = Dunning::create($data);
 
-// GET request
-$response = $client->get('/contacts', ['email' => 'example@domain.com']);
+// Find a dunning
+$dunning = Dunning::find('dunning-id');
 
-// POST request
-$response = $client->post('/invoices', ['data' => 'value']);
+// Pursue a dunning
+$result = Dunning::pursue('dunning-id');
+
+// Render dunning document
+$document = Dunning::render('dunning-id');
+
+// Download dunning file
+$file = Dunning::download('dunning-id');
+
+// Get deeplink
+$link = Dunning::deeplink('dunning-id');
 ```
 
 ### Using Builders
@@ -169,27 +159,6 @@ $invoice = InvoiceBuilder::make()
     ->toArray(); // Automatically validates the invoice data
 ```
 
-### Using DTOs
-
-The package provides Data Transfer Objects for type-safe API responses:
-
-```php
-use PhilHarmonie\LexOffice\DTOs\ContactDto;
-use PhilHarmonie\LexOffice\DTOs\InvoiceDto;
-
-// Convert API response to DTO
-$contactData = Contact::find('contact-id');
-$contact = ContactDto::fromArray($contactData);
-
-// Access typed properties
-echo $contact->name; // string
-echo $contact->email; // string|null
-echo $contact->createdDate; // string
-
-// Convert back to array
-$array = $contact->toArray();
-```
-
 ### Error Handling
 
 The package provides enhanced error handling with detailed exception information:
@@ -206,6 +175,29 @@ try {
 }
 ```
 
+### Advanced Usage
+
+For advanced use cases, you can inject services directly:
+
+```php
+use PhilHarmonie\LexOffice\Services\ContactService;
+use PhilHarmonie\LexOffice\Services\InvoiceService;
+
+class MyController
+{
+    public function __construct(
+        private ContactService $contactService,
+        private InvoiceService $invoiceService
+    ) {}
+
+    public function createInvoice()
+    {
+        $contact = $this->contactService->find('contact-id');
+        $invoice = $this->invoiceService->create($data);
+    }
+}
+```
+
 ### Performance Features
 
 The package includes several performance optimizations:
@@ -213,7 +205,6 @@ The package includes several performance optimizations:
 - **Automatic Caching**: GET requests to read-only endpoints are automatically cached
 - **Rate Limiting**: Automatic throttling to stay within API limits (2 requests/second)
 - **Retry Logic**: Automatic retry with exponential backoff for 5xx errors and rate limits
-- **Connection Pooling**: Efficient HTTP connection management
 
 ## Testing
 
