@@ -48,3 +48,30 @@ test('find method calls client with correct endpoint', function () {
     $result = $this->service->find($id);
     expect($result)->toBe($expectedResponse);
 });
+
+test('all method calls client with correct endpoint and no filters', function () {
+    $expectedResponse = ['invoices' => []];
+
+    $this->client
+        ->shouldReceive('get')
+        ->once()
+        ->with('/invoices', [])
+        ->andReturn($expectedResponse);
+
+    $result = $this->service->all();
+    expect($result)->toBe($expectedResponse);
+});
+
+test('all method calls client with correct endpoint and filters', function () {
+    $filters = ['voucherStatus' => 'open', 'voucherType' => 'invoice'];
+    $expectedResponse = ['invoices' => []];
+
+    $this->client
+        ->shouldReceive('get')
+        ->once()
+        ->with('/invoices', $filters)
+        ->andReturn($expectedResponse);
+
+    $result = $this->service->all($filters);
+    expect($result)->toBe($expectedResponse);
+});

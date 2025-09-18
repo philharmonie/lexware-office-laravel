@@ -33,4 +33,13 @@ final readonly class InvoiceService
     {
         return $this->client->get("/invoices/{$id}");
     }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return array<string, mixed>
+     */
+    public function all(array $filters = []): array
+    {
+        return $this->client->get('/invoices', $filters);
+    }
 }

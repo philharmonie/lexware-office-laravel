@@ -2,7 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
-## [unreleased]
+## [1.4.0] - 2025-09-18
+
+### 🚀 Features
+
+- Add all method to InvoiceService for retrieving invoices with optional filters and corresponding unit tests
+
+### ⚙️ Miscellaneous Tasks
+
+- Add composer test:do
+
+## [1.3.1] - 2025-09-16
 
 ### 🚀 Features
 
