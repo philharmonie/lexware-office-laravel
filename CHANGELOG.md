@@ -1,8 +1,17 @@
+## [1.5.1] - 2025-09-18
+
+### 🚀 Features
+
+- Implement withoutCache method across services and facades for cache bypassing, including unit tests
 ## [1.5.0] - 2025-09-18
 
 ### 🚀 Features
 
 - Add withoutCache method to Client for bypassing cache on requests and corresponding unit tests
+
+### ⚙️ Miscellaneous Tasks
+
+- *(release)* V1.5.0
 ## [1.4.0] - 2025-09-18
 
 ### 🚀 Features
