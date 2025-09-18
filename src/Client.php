@@ -23,12 +23,12 @@ final readonly class Client implements ClientInterface
 
     private const RETRY_DELAY_BASE_MS = 1000;
 
-    public function __construct(
-        private string $apiKey,
-        private Http $http,
-        private ?CacheManager $cache = null,
-        private int $cacheTtl = 300
-    ) {}
+    public function __construct(private string $apiKey, private Http $http, private ?CacheManager $cache = null, private int $cacheTtl = 300, private bool $bypassCache = false) {}
+
+    public function withoutCache(): self
+    {
+        return new self($this->apiKey, $this->http, $this->cache, $this->cacheTtl, true);
+    }
 
     /**
      * @param  array<string, mixed>  $params
@@ -38,7 +38,7 @@ final readonly class Client implements ClientInterface
     {
         $cacheKey = $this->getCacheKey('GET', $endpoint, $params);
 
-        if ($this->cache && $this->shouldCache($endpoint)) {
+        if ($this->cache && $this->shouldCache($endpoint) && ! $this->bypassCache) {
             $cached = $this->cache->get($cacheKey);
             if ($cached !== null && is_array($cached)) {
                 return $cached;
@@ -60,7 +60,7 @@ final readonly class Client implements ClientInterface
 
             $result = is_array($response) ? $response : [];
 
-            if ($this->cache && $this->shouldCache($endpoint)) {
+            if ($this->cache && $this->shouldCache($endpoint) && ! $this->bypassCache) {
                 $this->cache->put($cacheKey, $result, $this->cacheTtl);
             }
 

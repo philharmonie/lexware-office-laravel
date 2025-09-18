@@ -488,3 +488,94 @@ test('handleRateLimit sleeps when window is full', function () {
 
     expect($res)->toBeArray()->toHaveKey('ok', true);
 });
+
+test('withoutCache method returns new client instance', function () {
+    $originalClient = $this->client;
+    $withoutCacheClient = $this->client->withoutCache();
+
+    expect($withoutCacheClient)->not->toBe($originalClient)
+        ->and($withoutCacheClient)->toBeInstanceOf(Client::class);
+});
+
+test('withoutCache client bypasses cache for GET requests', function () {
+    $this->http->fake([
+        '*' => $this->http::response(['data' => 'fresh'], 200),
+    ]);
+
+    $withoutCacheClient = $this->client->withoutCache();
+
+    // First request with cache bypass
+    $result1 = $withoutCacheClient->get('/contacts');
+    expect($result1)->toBe(['data' => 'fresh']);
+
+    // Second request should still make HTTP call (not cached)
+    $result2 = $withoutCacheClient->get('/contacts');
+    expect($result2)->toBe(['data' => 'fresh']);
+
+    // Verify that two HTTP requests were made
+    $this->http->assertSentCount(2);
+});
+
+test('withoutCache client does not write to cache', function () {
+    $this->http->fake([
+        '*' => $this->http::response(['data' => 'fresh'], 200),
+    ]);
+
+    $withoutCacheClient = $this->client->withoutCache();
+
+    // Make request with cache bypass
+    $result = $withoutCacheClient->get('/contacts');
+    expect($result)->toBe(['data' => 'fresh']);
+
+    // Verify HTTP request was made
+    $this->http->assertSentCount(1);
+});
+
+test('withoutCache client preserves other client properties', function () {
+    $withoutCacheClient = $this->client->withoutCache();
+
+    $this->http->fake([
+        '*' => $this->http::response(['data' => 'test'], 200),
+    ]);
+
+    // Should still work with same API key and base URL
+    $result = $withoutCacheClient->get('/contacts');
+    expect($result)->toBe(['data' => 'test']);
+
+    $this->http->assertSent(function (Request $request) {
+        return $request->hasHeader('Authorization', 'Bearer test-api-key');
+    });
+});
+
+test('withoutCache client works with POST requests', function () {
+    $this->http->fake([
+        '*' => $this->http::response(['created' => true], 201),
+    ]);
+
+    $withoutCacheClient = $this->client->withoutCache();
+    $data = ['name' => 'Test Company'];
+
+    $result = $withoutCacheClient->post('/contacts', $data);
+    expect($result)->toBe(['created' => true]);
+
+    $this->http->assertSent(function (Request $request) use ($data) {
+        return $request->method() === 'POST'
+            && json_decode($request->body(), true) === $data;
+    });
+});
+
+test('withoutCache client can be chained', function () {
+    $this->http->fake([
+        '*' => $this->http::response(['data' => 'test'], 200),
+    ]);
+
+    // Test that withoutCache can be called multiple times
+    $client1 = $this->client->withoutCache();
+    $client2 = $client1->withoutCache();
+
+    expect($client1)->not->toBe($client2)
+        ->and($client2)->toBeInstanceOf(Client::class);
+
+    $result = $client2->get('/contacts');
+    expect($result)->toBe(['data' => 'test']);
+});
