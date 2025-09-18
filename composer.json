@@ -63,6 +63,12 @@
             "@test:lint",
             "@test:types",
             "@test:unit"
+        ],
+        "test:do": [
+            "@refacto",
+            "@lint",
+            "@test:types",
+            "@test:unit"
         ]
     },
     "extra": {
