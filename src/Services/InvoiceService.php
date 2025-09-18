@@ -12,6 +12,11 @@ final readonly class InvoiceService
         private ClientInterface $client
     ) {}
 
+    public function withoutCache(): self
+    {
+        return new self($this->client->withoutCache());
+    }
+
     /**
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>

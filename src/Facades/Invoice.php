@@ -10,6 +10,8 @@ use PhilHarmonie\LexOffice\Services\InvoiceService;
 /**
  * @method static array create(array $data, bool $finalize = false)
  * @method static array find(string $id)
+ * @method static array all(array $filters = [])
+ * @method static InvoiceService withoutCache()
  *
  * @mixin InvoiceService
  */

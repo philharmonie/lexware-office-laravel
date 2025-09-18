@@ -14,6 +14,7 @@ use PhilHarmonie\LexOffice\Services\DunningService;
  * @method static array render(string $id)
  * @method static array download(string $id)
  * @method static array deeplink(string $id)
+ * @method static DunningService withoutCache()
  *
  * @mixin DunningService
  */

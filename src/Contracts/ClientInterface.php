@@ -17,4 +17,9 @@ interface ClientInterface
      * @return array<string, mixed>
      */
     public function post(string $endpoint, array $data = []): array;
+
+    /**
+     * Create a new client instance that bypasses cache for subsequent requests.
+     */
+    public function withoutCache(): self;
 }

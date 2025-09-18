@@ -75,3 +75,37 @@ test('all method calls client with correct endpoint and filters', function () {
     $result = $this->service->all($filters);
     expect($result)->toBe($expectedResponse);
 });
+
+test('withoutCache method returns new service instance', function () {
+    $originalService = $this->service;
+
+    $this->client
+        ->shouldReceive('withoutCache')
+        ->once()
+        ->andReturnSelf();
+
+    $withoutCacheService = $this->service->withoutCache();
+
+    expect($withoutCacheService)->not->toBe($originalService)
+        ->and($withoutCacheService)->toBeInstanceOf(InvoiceService::class);
+});
+
+test('withoutCache service bypasses cache for requests', function () {
+    $expectedResponse = ['invoices' => []];
+
+    $this->client
+        ->shouldReceive('withoutCache')
+        ->once()
+        ->andReturnSelf();
+
+    $this->client
+        ->shouldReceive('get')
+        ->once()
+        ->with('/invoices', [])
+        ->andReturn($expectedResponse);
+
+    $withoutCacheService = $this->service->withoutCache();
+    $result = $withoutCacheService->all();
+
+    expect($result)->toBe($expectedResponse);
+});

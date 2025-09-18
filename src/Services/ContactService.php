@@ -12,6 +12,11 @@ final readonly class ContactService
         private ClientInterface $client
     ) {}
 
+    public function withoutCache(): self
+    {
+        return new self($this->client->withoutCache());
+    }
+
     /**
      * @return array<string, mixed>
      */

@@ -10,6 +10,7 @@ use PhilHarmonie\LexOffice\Services\ContactService;
 /**
  * @method static array find(string $id)
  * @method static array list(array $filters = [])
+ * @method static ContactService withoutCache()
  *
  * @mixin ContactService
  */

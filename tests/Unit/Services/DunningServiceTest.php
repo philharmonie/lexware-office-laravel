@@ -91,3 +91,38 @@ test('deeplink method calls client with correct endpoint', function () {
     $result = $this->service->deeplink($id);
     expect($result)->toBe($expectedResponse);
 });
+
+test('withoutCache method returns new service instance', function () {
+    $originalService = $this->service;
+
+    $this->client
+        ->shouldReceive('withoutCache')
+        ->once()
+        ->andReturnSelf();
+
+    $withoutCacheService = $this->service->withoutCache();
+
+    expect($withoutCacheService)->not->toBe($originalService)
+        ->and($withoutCacheService)->toBeInstanceOf(DunningService::class);
+});
+
+test('withoutCache service bypasses cache for requests', function () {
+    $id = 'test-dunning-id';
+    $expectedResponse = ['id' => $id];
+
+    $this->client
+        ->shouldReceive('withoutCache')
+        ->once()
+        ->andReturnSelf();
+
+    $this->client
+        ->shouldReceive('get')
+        ->once()
+        ->with("/dunnings/{$id}")
+        ->andReturn($expectedResponse);
+
+    $withoutCacheService = $this->service->withoutCache();
+    $result = $withoutCacheService->find($id);
+
+    expect($result)->toBe($expectedResponse);
+});
