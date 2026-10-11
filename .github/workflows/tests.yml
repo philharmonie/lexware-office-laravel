@@ -9,10 +9,21 @@ jobs:
       fail-fast: true
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        php: ["8.2"]
+        php: ["8.2", "8.3", "8.4"]
+        laravel: ["11.*", "12.*", "13.*"]
         dependency-version: [prefer-lowest, prefer-stable]
+        include:
+          - laravel: "11.*"
+            testbench: "9.*"
+          - laravel: "12.*"
+            testbench: "10.*"
+          - laravel: "13.*"
+            testbench: "11.*"
+        exclude:
+          - laravel: "13.*"
+            php: "8.2"
 
-    name: Tests P${{ matrix.php }} - ${{ matrix.os }} - ${{ matrix.dependency-version }}
+    name: Tests P${{ matrix.php }} - L${{ matrix.laravel }} - ${{ matrix.os }} - ${{ matrix.dependency-version }}
 
     steps:
       - name: Checkout
@@ -39,7 +50,9 @@ jobs:
             dependencies-php-${{ matrix.php }}-os-${{ matrix.os }}-version-${{ matrix.dependency-version }}-
 
       - name: Install Composer dependencies
-        run: composer update --${{ matrix.dependency-version }} --no-interaction --prefer-dist
+        run: |
+          composer require "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" --dev --no-interaction --no-update
+          composer update --${{ matrix.dependency-version }} --no-interaction --prefer-dist
 
       - name: Integration Tests
         run: php ./vendor/bin/pest

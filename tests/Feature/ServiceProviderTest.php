@@ -3,11 +3,13 @@
 declare(strict_types=1);
 
 use PhilHarmonie\LexOffice\Client;
+use PhilHarmonie\LexOffice\Services\ArticleService;
 use PhilHarmonie\LexOffice\Services\ContactService;
 use PhilHarmonie\LexOffice\Services\InvoiceService;
 
 test('service provider registers bindings', function () {
     expect(app(Client::class))->toBeInstanceOf(Client::class)
+        ->and(app(ArticleService::class))->toBeInstanceOf(ArticleService::class)
         ->and(app(ContactService::class))->toBeInstanceOf(ContactService::class)
         ->and(app(InvoiceService::class))->toBeInstanceOf(InvoiceService::class);
 });

@@ -1,3 +1,14 @@
+## [1.6.0] - 2026-10-11
+
+### 🚀 Features
+
+- Add Articles support (`ArticleService`, `Article` facade) for `GET /articles` and `GET /articles/{id}`
+- Support Laravel 13 (`illuminate/*` ^13.0, testbench 11, Pest 5)
+
+### 🐛 Bug Fixes
+
+- Scope cached GET responses per API key so clients for different accounts never share cached data
+
 ## [1.5.1] - 2025-09-18
 
 ### 🚀 Features

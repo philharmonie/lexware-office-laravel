@@ -138,7 +138,8 @@ final readonly class Client implements ClientInterface
      */
     private function getCacheKey(string $method, string $endpoint, array $params = []): string
     {
-        return 'lexoffice:'.strtolower($method).':'.md5($endpoint.serialize($params));
+        // Scope by API key so clients for different accounts never share cached responses.
+        return 'lexoffice:'.strtolower($method).':'.md5($this->apiKey.'|'.$endpoint.serialize($params));
     }
 
     private function shouldCache(string $endpoint): bool

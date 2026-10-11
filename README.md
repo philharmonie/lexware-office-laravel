@@ -9,7 +9,7 @@ A Laravel package for seamless integration with the Lexware Office API. This pac
 ## Requirements
 
 - PHP ^8.2
-- Laravel ^10.0|^11.0
+- Laravel ^10.0|^11.0|^12.0|^13.0
 - Guzzle ^7.0
 
 ## Installation
@@ -71,6 +71,27 @@ $contact = Contact::find('contact-id');
 // List contacts with optional filters
 $contacts = Contact::list(['email' => 'example@domain.com']);
 ```
+
+### Articles
+
+```php
+use PhilHarmonie\LexOffice\Facades\Article;
+
+// Find an article by ID
+$article = Article::find('article-id');
+
+// List articles (paged: content, totalPages, totalElements, number, size, ...)
+$page = Article::list(['page' => 0, 'size' => 100]);
+
+// Filter by articleNumber, gtin or type (PRODUCT|SERVICE); filters are AND-ed
+$services = Article::list(['type' => 'SERVICE']);
+$article = Article::list(['articleNumber' => 'LXW-BUCH-001'])['content'][0] ?? null;
+```
+
+Each article contains `id`, `organizationId`, `createdDate`, `updatedDate`,
+`archived`, `title`, `description`, `type`, `articleNumber`, `gtin`, `note`,
+`unitName`, `version` and `price` (`netPrice`, `grossPrice`, `leadingPrice`,
+`taxRate`). Article responses are not cached.
 
 ### Invoices
 
@@ -197,6 +218,29 @@ class MyController
     }
 }
 ```
+
+### Multiple Accounts (Per-Tenant API Keys)
+
+The container bindings use the global `lexoffice.api_key`. To work with
+several Lexware Office accounts, build the client and services manually:
+
+```php
+use Illuminate\Cache\CacheManager;
+use Illuminate\Http\Client\Factory as Http;
+use PhilHarmonie\LexOffice\Client;
+use PhilHarmonie\LexOffice\Services\ArticleService;
+use PhilHarmonie\LexOffice\Services\ContactService;
+use PhilHarmonie\LexOffice\Services\InvoiceService;
+
+$client = new Client(apiKey: $tenant->lexware_api_key, http: app(Http::class), cache: app(CacheManager::class));
+
+$articles = new ArticleService($client);
+$contacts = new ContactService($client);
+$invoices = new InvoiceService($client);
+```
+
+Rate limiting and cached GET responses are scoped per API key, so tenants never
+share cached data.
 
 ### Performance Features
 

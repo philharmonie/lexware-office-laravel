@@ -2,6 +2,10 @@
 
 namespace PHPSTORM_META {
 
+    override(\PhilHarmonie\LexOffice\Facades\Article::class, map([
+        '' => '@|\PhilHarmonie\LexOffice\Services\ArticleService',
+    ]));
+
     override(\PhilHarmonie\LexOffice\Facades\Contact::class, map([
         '' => '@|\PhilHarmonie\LexOffice\Services\ContactService',
     ]));
@@ -16,6 +20,7 @@ namespace PHPSTORM_META {
 
     override(\app(0), map([
         'PhilHarmonie\LexOffice\Contracts\ClientInterface' => \PhilHarmonie\LexOffice\Client::class,
+        'PhilHarmonie\LexOffice\Services\ArticleService' => \PhilHarmonie\LexOffice\Services\ArticleService::class,
         'PhilHarmonie\LexOffice\Services\ContactService' => \PhilHarmonie\LexOffice\Services\ContactService::class,
         'PhilHarmonie\LexOffice\Services\InvoiceService' => \PhilHarmonie\LexOffice\Services\InvoiceService::class,
         'PhilHarmonie\LexOffice\Services\DunningService' => \PhilHarmonie\LexOffice\Services\DunningService::class,

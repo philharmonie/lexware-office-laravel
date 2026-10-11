@@ -18,19 +18,20 @@
     "require": {
         "php": "^8.2",
         "guzzlehttp/guzzle": "^7.0",
-        "illuminate/http": "^10.0|^11.0|^12.0",
-        "illuminate/support": "^10.0|^11.0|^12.0"
+        "illuminate/http": "^10.0|^11.0|^12.0|^13.0",
+        "illuminate/support": "^10.0|^11.0|^12.0|^13.0"
     },
     "require-dev": {
+        "brianium/paratest": "^7.4,!=7.26.1",
         "laravel/pint": "^1.19",
         "mockery/mockery": "^1.6",
-        "orchestra/testbench": "^10.0",
-        "pestphp/pest": "^3.0",
+        "orchestra/testbench": "^9.0|^10.0|^11.0",
+        "pestphp/pest": "^3.7|^4.0|^5.0",
         "phpstan/phpstan": "^1.10.50",
         "phpstan/phpstan-deprecation-rules": "^1.1",
         "phpstan/phpstan-strict-rules": "^1.5",
         "rector/rector": "^1.0",
-        "symfony/var-dumper": "^6.4.0|^7.0.0"
+        "symfony/var-dumper": "^6.4.0|^7.0.0|^8.0.0"
     },
     "autoload": {
         "psr-4": {
