@@ -19,6 +19,14 @@ interface ClientInterface
     public function post(string $endpoint, array $data = []): array;
 
     /**
+     * Send a PUT request. PUT responses are never cached.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    public function put(string $endpoint, array $data = []): array;
+
+    /**
      * Create a new client instance that bypasses cache for subsequent requests.
      */
     public function withoutCache(): self;

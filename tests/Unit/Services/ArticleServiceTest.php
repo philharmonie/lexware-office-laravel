@@ -6,6 +6,7 @@ use Illuminate\Cache\CacheManager;
 use Illuminate\Http\Client\Factory;
 use Illuminate\Http\Client\Request;
 use PhilHarmonie\LexOffice\Client;
+use PhilHarmonie\LexOffice\Contracts\ClientInterface;
 use PhilHarmonie\LexOffice\Services\ArticleService;
 
 function articlePayload(array $overrides = []): array
@@ -173,4 +174,109 @@ test('cached responses are not shared between api keys', function () {
         ->and($tenantA->get('/contacts')['content'][0]['id'])->toBe('a');
 
     $this->http->assertSentCount(2);
+});
+
+function articleWritePayload(): array
+{
+    return [
+        'title' => 'Lexware buch',
+        'description' => 'Ein Buch',
+        'type' => 'PRODUCT',
+        'articleNumber' => 'LXW-BUCH-001',
+        'gtin' => '9783648170632',
+        'note' => 'Interne Notiz',
+        'unitName' => 'Stück',
+        'price' => [
+            'netPrice' => 61.90,
+            'leadingPrice' => 'NET',
+            'taxRate' => 19,
+        ],
+    ];
+}
+
+function articleWriteResponse(int $version): array
+{
+    return [
+        'id' => 'eb46d328-e1dd-11eb-8f3c-ef6e1f3a1a9c',
+        'resourceUri' => 'https://api.lexware.io/v1/articles/eb46d328-e1dd-11eb-8f3c-ef6e1f3a1a9c',
+        'createdDate' => '2023-07-08T12:00:00.000+02:00',
+        'updatedDate' => '2023-07-08T12:00:00.000+02:00',
+        'version' => $version,
+    ];
+}
+
+test('create posts the article to /articles', function () {
+    $payload = articleWritePayload();
+    $response = articleWriteResponse(0);
+
+    $this->http->fake([
+        'api.lexware.io/v1/articles' => $this->http::response($response, 201),
+    ]);
+
+    $result = $this->service->create($payload);
+
+    $this->http->assertSent(fn (Request $request): bool => $request->method() === 'POST'
+        && $request->url() === 'https://api.lexware.io/v1/articles'
+        && $request->hasHeader('Authorization', 'Bearer test-api-key')
+        && $request->data() === $payload);
+    $this->http->assertSentCount(1);
+
+    expect($result)->toBe($response);
+});
+
+test('update reads the current version uncached and puts it with the article', function () {
+    $cache = app(CacheManager::class);
+    $service = new ArticleService(new Client('test-api-key', $this->http, $cache));
+    $id = 'eb46d328-e1dd-11eb-8f3c-ef6e1f3a1a9c';
+    $payload = articleWritePayload();
+    $response = articleWriteResponse(4);
+
+    $this->http->fake([
+        'api.lexware.io/v1/articles/'.$id => $this->http->sequence()
+            ->push(articlePayload(['version' => 3]))
+            ->push($response),
+    ]);
+
+    $result = $service->update($id, $payload);
+
+    $recorded = $this->http->recorded();
+
+    expect($recorded)->toHaveCount(2)
+        ->and($recorded[0][0]->method())->toBe('GET')
+        ->and($recorded[0][0]->url())->toBe('https://api.lexware.io/v1/articles/'.$id)
+        ->and($recorded[1][0]->method())->toBe('PUT')
+        ->and($recorded[1][0]->url())->toBe('https://api.lexware.io/v1/articles/'.$id)
+        ->and($recorded[1][0]->data())->toBe([...$payload, 'version' => 3])
+        ->and($result)->toBe($response)
+        ->and($cache->get('lexoffice:get:'.md5('test-api-key|/articles/'.$id.serialize([]))))->toBeNull();
+});
+
+test('update keeps an explicitly passed version and skips the read', function () {
+    $id = 'eb46d328-e1dd-11eb-8f3c-ef6e1f3a1a9c';
+    $payload = [...articleWritePayload(), 'version' => 7];
+    $response = articleWriteResponse(8);
+
+    $this->http->fake([
+        'api.lexware.io/v1/articles/'.$id => $this->http::response($response),
+    ]);
+
+    $result = $this->service->update($id, $payload);
+
+    $this->http->assertSentCount(1);
+    $this->http->assertSent(fn (Request $request): bool => $request->method() === 'PUT'
+        && $request->url() === 'https://api.lexware.io/v1/articles/'.$id
+        && $request->data() === $payload);
+
+    expect($result)->toBe($response);
+});
+
+test('update reads the version without cache even for cached clients', function () {
+    $client = Mockery::mock(ClientInterface::class);
+    $uncached = Mockery::mock(ClientInterface::class);
+    $client->shouldReceive('withoutCache')->once()->andReturn($uncached);
+    $client->shouldNotReceive('get');
+    $uncached->shouldReceive('get')->once()->with('/articles/abc')->andReturn(['version' => 2]);
+    $client->shouldReceive('put')->once()->with('/articles/abc', ['title' => 'X', 'version' => 2])->andReturn(['version' => 3]);
+
+    expect((new ArticleService($client))->update('abc', ['title' => 'X']))->toBe(['version' => 3]);
 });

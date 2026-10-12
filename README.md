@@ -86,6 +86,24 @@ $page = Article::list(['page' => 0, 'size' => 100]);
 // Filter by articleNumber, gtin or type (PRODUCT|SERVICE); filters are AND-ed
 $services = Article::list(['type' => 'SERVICE']);
 $article = Article::list(['articleNumber' => 'LXW-BUCH-001'])['content'][0] ?? null;
+
+// Create an article (returns id, resourceUri, createdDate, updatedDate, version)
+$created = Article::create([
+    'title' => 'Lexware buch',
+    'type' => 'PRODUCT', // or SERVICE
+    'unitName' => 'Stück',
+    'articleNumber' => 'LXW-BUCH-001',
+    'price' => ['netPrice' => 61.90, 'leadingPrice' => 'NET', 'taxRate' => 19],
+]);
+
+// Update an article: the current version is fetched (uncached) and sent
+// automatically. Pass 'version' yourself to skip that extra request.
+Article::update($created['id'], [
+    'title' => 'Lexware buch (2. Auflage)',
+    'type' => 'PRODUCT',
+    'unitName' => 'Stück',
+    'price' => ['netPrice' => 64.90, 'leadingPrice' => 'NET', 'taxRate' => 19],
+]);
 ```
 
 Each article contains `id`, `organizationId`, `createdDate`, `updatedDate`,

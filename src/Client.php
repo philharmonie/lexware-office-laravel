@@ -91,6 +91,31 @@ final readonly class Client implements ClientInterface
         }, $endpoint, $data);
     }
 
+    /**
+     * Send a PUT request. PUT responses are never cached.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    public function put(string $endpoint, array $data = []): array
+    {
+        return $this->withRetry(function () use ($endpoint, $data): array {
+            $this->handleRateLimit();
+
+            $response = $this->http
+                ->withHeaders([
+                    'Authorization' => "Bearer {$this->apiKey}",
+                    'Accept' => 'application/json',
+                    'Content-Type' => 'application/json',
+                ])
+                ->put($this->getBaseUrl().$endpoint, $data)
+                ->throw()
+                ->json();
+
+            return is_array($response) ? $response : [];
+        }, $endpoint, $data);
+    }
+
     private function getBaseUrl(): string
     {
         $baseUrl = Config::get('lexoffice.base_url', 'https://api.lexoffice.io/v1');

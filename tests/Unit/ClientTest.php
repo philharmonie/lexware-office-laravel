@@ -579,3 +579,57 @@ test('withoutCache client can be chained', function () {
     $result = $client2->get('/contacts');
     expect($result)->toBe(['data' => 'test']);
 });
+
+test('put request sends correct headers, body and returns response', function () {
+    $data = ['title' => 'Test Article', 'version' => 1];
+    $responseData = ['id' => 'article-id', 'version' => 2];
+
+    $this->http->fake([
+        '*' => $this->http::response($responseData),
+    ]);
+
+    $result = $this->client->put('/articles/article-id', $data);
+
+    $this->http->assertSent(function (Request $request) use ($data) {
+        return $request->method() === 'PUT'
+            && $request->url() === 'https://api.lexware.io/v1/articles/article-id'
+            && $request->hasHeader('Accept', 'application/json')
+            && $request->hasHeader('Content-Type', 'application/json')
+            && $request->hasHeader('Authorization', 'Bearer test-api-key')
+            && json_decode($request->body(), true) === $data;
+    });
+
+    expect($result)->toBe($responseData);
+});
+
+test('put request throws api exception on client error', function () {
+    $this->http->fake([
+        '*' => $this->http::response(['message' => 'Conflict'], 409),
+    ]);
+
+    try {
+        $this->client->put('/articles/article-id', ['version' => 1]);
+        $this->fail('Expected ApiException');
+    } catch (ApiException $e) {
+        expect($e->getCode())->toBe(409)
+            ->and($e->getMessage())->toContain('Conflict');
+    }
+});
+
+test('put request is never cached', function () {
+    $cache = app(CacheManager::class);
+    $client = new Client('test-api-key', $this->http, $cache);
+
+    $this->http->fake([
+        '*' => $this->http->sequence()
+            ->push(['version' => 2])
+            ->push(['version' => 3]),
+    ]);
+
+    expect($client->put('/contacts/id', ['version' => 1]))->toBe(['version' => 2])
+        ->and($client->put('/contacts/id', ['version' => 1]))->toBe(['version' => 3])
+        ->and($cache->get('lexoffice:put:'.md5('test-api-key|/contacts/id'.serialize(['version' => 1]))))->toBeNull()
+        ->and($cache->get('lexoffice:get:'.md5('test-api-key|/contacts/id'.serialize([]))))->toBeNull();
+
+    $this->http->assertSentCount(2);
+});
