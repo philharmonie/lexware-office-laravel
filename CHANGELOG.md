@@ -1,3 +1,10 @@
+## [1.7.0] - 2026-10-12
+
+### 🚀 Features
+
+- Create and update articles (`Article::create()` via `POST /articles`, `Article::update()` via `PUT /articles/{id}`); `update()` fetches the current `version` uncached for optimistic locking unless one is passed
+- Add `put()` to `ClientInterface` and `Client` (same retry, rate limiting and error handling as `post()`, never cached)
+
 ## [1.6.0] - 2026-10-11
 
 ### 🚀 Features
